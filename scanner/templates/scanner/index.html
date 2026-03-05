@@ -1,0 +1,672 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIELD — Security Scanner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #16161f;
+            --cyan: #00ffd5;
+            --cyan-dim: #00ffd533;
+            --green: #00ff88;
+            --red: #ff3355;
+            --orange: #ff8800;
+            --yellow: #ffcc00;
+            --text: #e0e0e8;
+            --text-dim: #6a6a7a;
+            --border: #2a2a3a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(0,255,213,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,213,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--cyan);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 8s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.2; }
+            100% { transform: translateY(-10vh) scale(1); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 12px;
+            background: linear-gradient(135deg, var(--cyan), #00ff88, var(--cyan));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s ease-in-out infinite;
+            text-shadow: 0 0 80px rgba(0,255,213,0.3);
+            margin-bottom: 8px;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% center; }
+            50% { background-position: 200% center; }
+        }
+
+        .subtitle {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Scanner Input */
+        .scanner-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanner-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            animation: scanLine 3s ease-in-out infinite;
+        }
+
+        @keyframes scanLine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .url-input {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .url-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 20px rgba(0,255,213,0.15), inset 0 0 20px rgba(0,255,213,0.05);
+        }
+
+        .url-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .scan-btn {
+            background: linear-gradient(135deg, var(--cyan), #00cc99);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 10px;
+            padding: 16px 32px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,255,213,0.3);
+        }
+
+        .scan-btn:active {
+            transform: translateY(0);
+        }
+
+        .scan-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading.active { display: block; }
+
+        .loading-ring {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--cyan);
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Results */
+        .results {
+            display: none;
+        }
+
+        .results.active { display: block; }
+
+        /* Score Circle */
+        .score-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .score-circle svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .score-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 6;
+        }
+
+        .score-fill {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 502;
+            stroke-dashoffset: 502;
+            transition: stroke-dashoffset 1.5s ease, stroke 0.5s ease;
+        }
+
+        .score-value {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-top: 4px;
+        }
+
+        .grade-badge {
+            display: inline-block;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 6px 24px;
+            border-radius: 8px;
+            letter-spacing: 4px;
+        }
+
+        /* Check items */
+        .checks-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .check-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 22px;
+            display: grid;
+            grid-template-columns: 36px 1fr auto;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        .check-item.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .check-item:hover {
+            border-color: var(--cyan-dim);
+            background: #1a1a25;
+        }
+
+        .check-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .check-icon.pass {
+            background: rgba(0,255,136,0.1);
+            color: var(--green);
+        }
+
+        .check-icon.fail {
+            background: rgba(255,51,85,0.1);
+            color: var(--red);
+        }
+
+        .check-info h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .check-info p {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+
+        .check-value {
+            font-size: 0.72rem;
+            padding: 5px 12px;
+            border-radius: 6px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .severity-critical { background: rgba(255,51,85,0.15); color: var(--red); }
+        .severity-high { background: rgba(255,136,0,0.15); color: var(--orange); }
+        .severity-medium { background: rgba(255,204,0,0.15); color: var(--yellow); }
+        .severity-low { background: rgba(0,255,213,0.15); color: var(--cyan); }
+
+        /* History */
+        .history-section {
+            margin-top: 50px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 4px;
+            margin-bottom: 20px;
+            color: var(--text-dim);
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            border-color: var(--cyan-dim);
+        }
+
+        .history-url {
+            font-size: 0.8rem;
+            color: var(--text);
+        }
+
+        .history-score {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        /* Error */
+        .error-box {
+            display: none;
+            background: rgba(255,51,85,0.08);
+            border: 1px solid rgba(255,51,85,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: var(--red);
+            margin-bottom: 20px;
+        }
+
+        .error-box.active { display: block; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: var(--text-dim);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            .logo { font-size: 2rem; letter-spacing: 6px; }
+            .input-group { flex-direction: column; }
+            .scan-btn { width: 100%; }
+            .check-item { grid-template-columns: 32px 1fr; }
+            .check-value { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Particles -->
+<div class="particles">
+    <div class="particle" style="left:10%; animation-delay:0s; animation-duration:7s"></div>
+    <div class="particle" style="left:20%; animation-delay:1s; animation-duration:9s"></div>
+    <div class="particle" style="left:35%; animation-delay:2s; animation-duration:6s"></div>
+    <div class="particle" style="left:50%; animation-delay:0.5s; animation-duration:8s"></div>
+    <div class="particle" style="left:65%; animation-delay:3s; animation-duration:7s"></div>
+    <div class="particle" style="left:80%; animation-delay:1.5s; animation-duration:10s"></div>
+    <div class="particle" style="left:90%; animation-delay:2.5s; animation-duration:6s"></div>
+</div>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">SHIELD</div>
+        <div class="subtitle">Security Header Inspector & Endpoint Detector</div>
+    </div>
+
+    <!-- Scanner -->
+    <div class="scanner-box">
+        <div class="input-group">
+            <input type="text" class="url-input" id="urlInput" placeholder="Введите URL для сканирования..." autocomplete="off">
+            <button class="scan-btn" id="scanBtn" onclick="startScan()">SCAN</button>
+        </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="loading-ring"></div>
+        <div class="loading-text">СКАНИРОВАНИЕ...</div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+        <div class="score-section">
+            <div class="score-circle">
+                <svg viewBox="0 0 170 170">
+                    <circle class="score-bg" cx="85" cy="85" r="80"></circle>
+                    <circle class="score-fill" id="scoreFill" cx="85" cy="85" r="80"></circle>
+                </svg>
+                <div class="score-value">
+                    <div class="score-number" id="scoreNumber">0</div>
+                    <div class="score-label">SCORE</div>
+                </div>
+            </div>
+            <div class="grade-badge" id="gradeBadge"></div>
+        </div>
+
+        <div class="checks-grid" id="checksGrid"></div>
+    </div>
+
+    <!-- History -->
+    {% if recent_scans %}
+    <div class="history-section">
+        <div class="section-title">ПОСЛЕДНИЕ СКАНИРОВАНИЯ</div>
+        {% for scan in recent_scans %}
+        <div class="history-item" onclick="document.getElementById('urlInput').value='{{ scan.url }}'; startScan();">
+            <span class="history-url">{{ scan.url }}</span>
+            <span class="history-score" style="color: {{ scan.grade_color }}">{{ scan.score }}/100</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        SHIELD SCANNER v1.0 — Инструмент аудита безопасности
+    </div>
+</div>
+
+<script>
+const urlInput = document.getElementById('urlInput');
+const scanBtn = document.getElementById('scanBtn');
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
+const errorBox = document.getElementById('errorBox');
+
+urlInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startScan();
+});
+
+function startScan() {
+    const url = urlInput.value.trim();
+    if (!url) return;
+
+    loading.classList.add('active');
+    results.classList.remove('active');
+    errorBox.classList.remove('active');
+    scanBtn.disabled = true;
+
+    fetch('/api/scan/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url })
+    })
+    .then(res => res.json())
+    .then(data => {
+        loading.classList.remove('active');
+        scanBtn.disabled = false;
+
+        if (data.error) {
+            errorBox.textContent = data.error;
+            errorBox.classList.add('active');
+            return;
+        }
+
+        showResults(data);
+    })
+    .catch(err => {
+        loading.classList.remove('active');
+        scanBtn.disabled = false;
+        errorBox.textContent = 'Ошибка соединения с сервером';
+        errorBox.classList.add('active');
+    });
+}
+
+function showResults(data) {
+    results.classList.add('active');
+
+    // Score animation
+    const score = data.score;
+    const scoreNumber = document.getElementById('scoreNumber');
+    const scoreFill = document.getElementById('scoreFill');
+    const gradeBadge = document.getElementById('gradeBadge');
+
+    // Color based on score
+    let color, grade;
+    if (score >= 90) { color = '#00ff88'; grade = 'A'; }
+    else if (score >= 75) { color = '#88ff00'; grade = 'B'; }
+    else if (score >= 60) { color = '#ffcc00'; grade = 'C'; }
+    else if (score >= 40) { color = '#ff8800'; grade = 'D'; }
+    else { color = '#ff3355'; grade = 'F'; }
+
+    // Animate score circle
+    const circumference = 2 * Math.PI * 80;
+    const offset = circumference - (score / 100) * circumference;
+    scoreFill.style.stroke = color;
+    scoreFill.style.strokeDasharray = circumference;
+
+    setTimeout(() => {
+        scoreFill.style.strokeDashoffset = offset;
+    }, 100);
+
+    // Animate number
+    let current = 0;
+    const step = Math.ceil(score / 40);
+    const counter = setInterval(() => {
+        current += step;
+        if (current >= score) {
+            current = score;
+            clearInterval(counter);
+        }
+        scoreNumber.textContent = current;
+        scoreNumber.style.color = color;
+    }, 30);
+
+    // Grade badge
+    gradeBadge.textContent = `GRADE: ${grade}`;
+    gradeBadge.style.background = color + '18';
+    gradeBadge.style.color = color;
+    gradeBadge.style.border = `1px solid ${color}40`;
+
+    // Checks
+    const checksGrid = document.getElementById('checksGrid');
+    checksGrid.innerHTML = '';
+
+    data.checks.forEach((check, i) => {
+        const item = document.createElement('div');
+        item.className = 'check-item';
+        item.innerHTML = `
+            <div class="check-icon ${check.passed ? 'pass' : 'fail'}">
+                ${check.passed ? '✓' : '✗'}
+            </div>
+            <div class="check-info">
+                <h3>${check.name}
+                    <span class="severity-badge severity-${check.severity}">${check.severity}</span>
+                </h3>
+                <p>${check.description}</p>
+            </div>
+            <div class="check-value">${check.value}</div>
+        `;
+
+        checksGrid.appendChild(item);
+
+        setTimeout(() => {
+            item.classList.add('visible');
+        }, 100 + i * 80);
+    });
+}
+</script>
+
+</body>
+</html>
