@@ -4,667 +4,653 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHIELD — Security Scanner</title>
+    <title>SHIELD v2 — Security Scanner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-card: #16161f;
+            --bg-0: #06060b;
+            --bg-1: #0c0c14;
+            --bg-2: #13131e;
+            --bg-3: #1a1a28;
             --cyan: #00ffd5;
-            --cyan-dim: #00ffd533;
+            --cyan-glow: rgba(0,255,213,0.15);
             --green: #00ff88;
-            --red: #ff3355;
-            --orange: #ff8800;
-            --yellow: #ffcc00;
-            --text: #e0e0e8;
-            --text-dim: #6a6a7a;
-            --border: #2a2a3a;
+            --red: #ff2d55;
+            --orange: #ff8c00;
+            --yellow: #ffd000;
+            --purple: #a855f7;
+            --text: #e4e4ec;
+            --text-dim: #5e5e72;
+            --text-bright: #ffffff;
+            --border: #222235;
+            --border-light: #2d2d44;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
-            background: var(--bg-primary);
+            background: var(--bg-0);
             color: var(--text);
             font-family: 'JetBrains Mono', monospace;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* Animated grid background */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
+        /* === BACKGROUND === */
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
             background:
-                linear-gradient(rgba(0,255,213,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,255,213,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            animation: gridMove 20s linear infinite;
-            z-index: 0;
+                linear-gradient(rgba(0,255,213,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,213,0.025) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridDrift 30s linear infinite;
         }
+        @keyframes gridDrift { to { transform: translate(50px, 50px); } }
 
-        @keyframes gridMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(60px, 60px); }
+        .bg-glow {
+            position: fixed; z-index: 0; pointer-events: none;
+            width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,255,213,0.06) 0%, transparent 70%);
+            top: -200px; left: 50%; transform: translateX(-50%);
+            animation: glowPulse 6s ease-in-out infinite;
         }
+        @keyframes glowPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* Floating particles */
-        .particles {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-        }
+        .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 40px 20px 60px; }
 
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: var(--cyan);
-            border-radius: 50%;
-            opacity: 0;
-            animation: float 8s infinite;
-        }
+        /* === HEADER === */
+        .header { text-align: center; margin-bottom: 48px; }
 
-        @keyframes float {
-            0%, 100% { opacity: 0; transform: translateY(100vh) scale(0); }
-            10% { opacity: 0.8; }
-            90% { opacity: 0.2; }
-            100% { transform: translateY(-10vh) scale(1); }
-        }
-
-        .container {
-            position: relative;
-            z-index: 1;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
+        .logo-wrapper { position: relative; display: inline-block; }
 
         .logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
-            font-weight: 900;
-            letter-spacing: 12px;
-            background: linear-gradient(135deg, var(--cyan), #00ff88, var(--cyan));
+            font-size: 4rem; font-weight: 900; letter-spacing: 14px;
+            background: linear-gradient(135deg, var(--cyan) 0%, #00ff88 50%, var(--cyan) 100%);
             background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shimmer 3s ease-in-out infinite;
-            text-shadow: 0 0 80px rgba(0,255,213,0.3);
-            margin-bottom: 8px;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { background-position: 0% center; }
-            50% { background-position: 200% center; }
-        }
-
-        .subtitle {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            letter-spacing: 6px;
-            text-transform: uppercase;
-        }
-
-        /* Scanner Input */
-        .scanner-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 30px;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: textShimmer 4s ease-in-out infinite;
             position: relative;
-            overflow: hidden;
+        }
+        @keyframes textShimmer { 0%,100% { background-position: 0% center; } 50% { background-position: 200% center; } }
+
+        .logo-glow {
+            position: absolute; inset: -20px; z-index: -1;
+            background: radial-gradient(ellipse, rgba(0,255,213,0.2) 0%, transparent 70%);
+            filter: blur(30px);
         }
 
+        .version { font-family: 'Share Tech Mono'; font-size: 0.65rem; color: var(--cyan); letter-spacing: 4px; margin-top: 2px; }
+        .subtitle { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 5px; text-transform: uppercase; margin-top: 6px; }
+
+        /* === SCANNER BOX === */
+        .scanner-box {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 16px; padding: 28px 28px 24px; margin-bottom: 28px;
+            position: relative; overflow: hidden;
+        }
         .scanner-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 2px;
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
             background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-            animation: scanLine 3s ease-in-out infinite;
+            animation: laserScan 4s ease-in-out infinite;
         }
+        @keyframes laserScan { 0% { left: -100%; } 100% { left: 100%; } }
 
-        @keyframes scanLine {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-
-        .input-group {
-            display: flex;
-            gap: 12px;
-        }
+        .input-row { display: flex; gap: 10px; }
 
         .url-input {
-            flex: 1;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px 20px;
-            color: var(--text);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.95rem;
-            outline: none;
-            transition: all 0.3s ease;
+            flex: 1; background: var(--bg-0); border: 1px solid var(--border);
+            border-radius: 10px; padding: 15px 18px;
+            color: var(--text); font-family: 'JetBrains Mono'; font-size: 0.9rem;
+            outline: none; transition: 0.3s;
         }
-
-        .url-input:focus {
-            border-color: var(--cyan);
-            box-shadow: 0 0 20px rgba(0,255,213,0.15), inset 0 0 20px rgba(0,255,213,0.05);
-        }
-
-        .url-input::placeholder {
-            color: var(--text-dim);
-        }
+        .url-input:focus { border-color: var(--cyan); box-shadow: 0 0 24px var(--cyan-glow), inset 0 0 16px rgba(0,255,213,0.04); }
+        .url-input::placeholder { color: var(--text-dim); }
 
         .scan-btn {
-            background: linear-gradient(135deg, var(--cyan), #00cc99);
-            color: var(--bg-primary);
-            border: none;
-            border-radius: 10px;
-            padding: 16px 32px;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            background: linear-gradient(135deg, var(--cyan), #00cc99); color: var(--bg-0);
+            border: none; border-radius: 10px; padding: 15px 36px;
+            font-family: 'Orbitron'; font-weight: 700; font-size: 0.8rem; letter-spacing: 3px;
+            cursor: pointer; transition: 0.3s; white-space: nowrap;
         }
+        .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,255,213,0.35); }
+        .scan-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        .scan-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,255,213,0.3);
+        .quick-links { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .quick-link {
+            font-size: 0.65rem; color: var(--text-dim); background: var(--bg-0);
+            border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+            cursor: pointer; transition: 0.2s;
         }
+        .quick-link:hover { color: var(--cyan); border-color: var(--cyan); }
 
-        .scan-btn:active {
-            transform: translateY(0);
-        }
-
-        .scan-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Loading animation */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 60px 20px;
-        }
-
+        /* === LOADING === */
+        .loading { display: none; text-align: center; padding: 80px 20px; }
         .loading.active { display: block; }
 
-        .loading-ring {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            border: 3px solid var(--border);
-            border-top: 3px solid var(--cyan);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .radar {
+            width: 100px; height: 100px; margin: 0 auto 24px; position: relative;
+            border: 2px solid var(--border); border-radius: 50%;
         }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .loading-text {
-            color: var(--cyan);
-            font-size: 0.85rem;
-            letter-spacing: 3px;
-            animation: blink 1.5s ease-in-out infinite;
+        .radar::before {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 50%; height: 2px;
+            background: linear-gradient(90deg, var(--cyan), transparent);
+            transform-origin: left center; animation: radarSweep 2s linear infinite;
         }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .radar::after {
+            content: ''; position: absolute; inset: 20%; border: 1px solid var(--border); border-radius: 50%;
         }
+        @keyframes radarSweep { to { transform: rotate(360deg); } }
 
-        /* Results */
-        .results {
-            display: none;
+        .radar-dot {
+            position: absolute; width: 4px; height: 4px; background: var(--cyan);
+            border-radius: 50%; animation: radarBlink 2s ease-in-out infinite;
         }
+        @keyframes radarBlink { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
 
+        .loading-text { color: var(--cyan); font-size: 0.8rem; letter-spacing: 4px; }
+        .loading-sub { color: var(--text-dim); font-size: 0.7rem; margin-top: 8px; }
+
+        /* === ERROR === */
+        .error-box {
+            display: none; background: rgba(255,45,85,0.06); border: 1px solid rgba(255,45,85,0.25);
+            border-radius: 12px; padding: 18px 24px; color: var(--red); font-size: 0.85rem; margin-bottom: 20px;
+        }
+        .error-box.active { display: block; }
+
+        /* === RESULTS === */
+        .results { display: none; }
         .results.active { display: block; }
 
-        /* Score Circle */
-        .score-section {
-            text-align: center;
-            margin-bottom: 40px;
+        /* Meta bar */
+        .meta-bar {
+            display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px;
+            padding: 14px 18px; background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 10px; font-size: 0.72rem;
+        }
+        .meta-item { color: var(--text-dim); }
+        .meta-item span { color: var(--text); }
+
+        /* Score row */
+        .score-row {
+            display: flex; align-items: center; gap: 36px; margin-bottom: 36px;
+            padding: 32px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
         }
 
-        .score-circle {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 20px;
-            position: relative;
-        }
-
-        .score-circle svg {
-            width: 100%;
-            height: 100%;
-            transform: rotate(-90deg);
-        }
-
-        .score-bg {
-            fill: none;
-            stroke: var(--border);
-            stroke-width: 6;
-        }
-
+        .score-circle { width: 160px; height: 160px; position: relative; flex-shrink: 0; }
+        .score-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .score-bg { fill: none; stroke: var(--border); stroke-width: 5; }
         .score-fill {
-            fill: none;
-            stroke-width: 6;
-            stroke-linecap: round;
-            stroke-dasharray: 502;
-            stroke-dashoffset: 502;
-            transition: stroke-dashoffset 1.5s ease, stroke 0.5s ease;
+            fill: none; stroke-width: 5; stroke-linecap: round;
+            stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.2,1);
         }
-
-        .score-value {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .score-inner {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
+        .score-num { font-family: 'Orbitron'; font-size: 2.8rem; font-weight: 900; line-height: 1; }
+        .score-lbl { font-size: 0.6rem; color: var(--text-dim); letter-spacing: 3px; margin-top: 2px; }
 
-        .score-number {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.8rem;
-            font-weight: 900;
-            line-height: 1;
+        .score-details { flex: 1; }
+        .grade-big {
+            font-family: 'Orbitron'; font-size: 2rem; font-weight: 900; letter-spacing: 4px; margin-bottom: 8px;
         }
+        .risk-level { font-size: 0.8rem; margin-bottom: 16px; }
+        .score-stats { display: flex; gap: 20px; }
+        .stat { text-align: center; }
+        .stat-val { font-family: 'Orbitron'; font-size: 1.4rem; font-weight: 700; }
+        .stat-lbl { font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 2px; }
 
-        .score-label {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            letter-spacing: 3px;
-            margin-top: 4px;
+        /* Section headers */
+        .section-hdr {
+            font-family: 'Orbitron'; font-size: 0.85rem; font-weight: 600;
+            letter-spacing: 4px; color: var(--text-dim); margin: 32px 0 14px;
+            display: flex; align-items: center; gap: 10px;
         }
-
-        .grade-badge {
-            display: inline-block;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            padding: 6px 24px;
-            border-radius: 8px;
-            letter-spacing: 4px;
+        .section-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .section-count {
+            background: var(--bg-3); border: 1px solid var(--border);
+            padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; color: var(--text);
         }
 
         /* Check items */
-        .checks-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .checks-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .check-row {
+            display: grid; grid-template-columns: 32px 1fr auto;
+            align-items: center; gap: 14px;
+            padding: 14px 18px; background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 10px; transition: 0.2s;
+            opacity: 0; transform: translateY(8px);
+        }
+        .check-row.visible { opacity: 1; transform: translateY(0); }
+        .check-row:hover { border-color: var(--border-light); background: var(--bg-3); }
+
+        .chk-icon {
+            width: 32px; height: 32px; border-radius: 7px;
+            display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+        }
+        .chk-icon.pass { background: rgba(0,255,136,0.1); color: var(--green); }
+        .chk-icon.fail { background: rgba(255,45,85,0.1); color: var(--red); }
+
+        .chk-name { font-size: 0.82rem; font-weight: 500; }
+        .chk-desc { font-size: 0.68rem; color: var(--text-dim); margin-top: 1px; }
+        .chk-val {
+            font-size: 0.68rem; background: var(--bg-0); border: 1px solid var(--border);
+            padding: 4px 10px; border-radius: 5px; max-width: 260px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
 
-        .check-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px 22px;
-            display: grid;
-            grid-template-columns: 36px 1fr auto;
-            align-items: center;
-            gap: 16px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            opacity: 0;
-            transform: translateX(-20px);
+        /* Vulnerability cards */
+        .vuln-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .vuln-card {
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px;
+            overflow: hidden; transition: 0.2s;
+            opacity: 0; transform: translateY(8px);
+        }
+        .vuln-card.visible { opacity: 1; transform: translateY(0); }
+        .vuln-card:hover { border-color: var(--border-light); }
+
+        .vuln-header {
+            display: flex; align-items: center; gap: 12px; padding: 16px 18px;
+            cursor: pointer; user-select: none;
         }
 
-        .check-item.visible {
-            opacity: 1;
-            transform: translateX(0);
+        .vuln-sev {
+            font-family: 'Orbitron'; font-size: 0.55rem; font-weight: 700;
+            padding: 3px 8px; border-radius: 4px; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap;
         }
+        .sev-critical { background: rgba(255,45,85,0.15); color: var(--red); border: 1px solid rgba(255,45,85,0.3); }
+        .sev-high { background: rgba(255,140,0,0.15); color: var(--orange); border: 1px solid rgba(255,140,0,0.3); }
+        .sev-medium { background: rgba(255,208,0,0.12); color: var(--yellow); border: 1px solid rgba(255,208,0,0.25); }
+        .sev-low { background: rgba(0,255,213,0.1); color: var(--cyan); border: 1px solid rgba(0,255,213,0.2); }
+        .sev-info { background: rgba(168,85,247,0.1); color: var(--purple); border: 1px solid rgba(168,85,247,0.2); }
 
-        .check-item:hover {
-            border-color: var(--cyan-dim);
-            background: #1a1a25;
-        }
+        .vuln-title { flex: 1; font-size: 0.82rem; font-weight: 500; }
+        .vuln-cvss { font-family: 'Orbitron'; font-size: 0.75rem; font-weight: 700; }
+        .vuln-toggle { color: var(--text-dim); font-size: 0.8rem; transition: 0.3s; }
+        .vuln-toggle.open { transform: rotate(180deg); }
 
-        .check-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
+        .vuln-body { display: none; padding: 0 18px 18px; }
+        .vuln-body.open { display: block; }
 
-        .check-icon.pass {
-            background: rgba(0,255,136,0.1);
+        .vuln-field { margin-bottom: 12px; }
+        .vuln-field-label { font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+        .vuln-field-text { font-size: 0.78rem; line-height: 1.6; color: var(--text); }
+
+        .vuln-fix {
+            background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.15);
+            border-radius: 8px; padding: 12px 14px; font-size: 0.75rem; line-height: 1.6;
             color: var(--green);
         }
 
-        .check-icon.fail {
-            background: rgba(255,51,85,0.1);
-            color: var(--red);
-        }
+        .vuln-ref { font-size: 0.68rem; color: var(--text-dim); font-style: italic; }
 
-        .check-info h3 {
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 3px;
+        /* Tech & Ports */
+        .tech-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tech-tag {
+            background: var(--bg-2); border: 1px solid var(--border);
+            padding: 6px 14px; border-radius: 8px; font-size: 0.75rem;
+            transition: 0.2s;
         }
+        .tech-tag:hover { border-color: var(--cyan); color: var(--cyan); }
 
-        .check-info p {
-            font-size: 0.72rem;
-            color: var(--text-dim);
+        .ports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+        .port-card {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px 16px; transition: 0.2s;
         }
-
-        .check-value {
-            font-size: 0.72rem;
-            padding: 5px 12px;
-            border-radius: 6px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .port-card:hover { border-color: var(--border-light); }
+        .port-num { font-family: 'Orbitron'; font-size: 1.1rem; font-weight: 700; }
+        .port-service { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+        .port-risk {
+            display: inline-block; font-size: 0.55rem; padding: 2px 6px; border-radius: 3px;
+            letter-spacing: 1px; text-transform: uppercase; margin-top: 6px;
         }
-
-        .severity-badge {
-            display: inline-block;
-            font-size: 0.6rem;
-            padding: 2px 8px;
-            border-radius: 4px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-left: 8px;
-        }
-
-        .severity-critical { background: rgba(255,51,85,0.15); color: var(--red); }
-        .severity-high { background: rgba(255,136,0,0.15); color: var(--orange); }
-        .severity-medium { background: rgba(255,204,0,0.15); color: var(--yellow); }
-        .severity-low { background: rgba(0,255,213,0.15); color: var(--cyan); }
+        .risk-danger { background: rgba(255,45,85,0.12); color: var(--red); }
+        .risk-warning { background: rgba(255,140,0,0.12); color: var(--orange); }
+        .risk-safe { background: rgba(0,255,136,0.1); color: var(--green); }
 
         /* History */
-        .history-section {
-            margin-top: 50px;
+        .history-section { margin-top: 40px; }
+        .hist-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 18px; background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 9px; margin-bottom: 5px; cursor: pointer; transition: 0.2s;
         }
+        .hist-row:hover { border-color: var(--border-light); }
+        .hist-url { font-size: 0.78rem; }
+        .hist-score { font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 700; }
 
-        .section-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 4px;
-            margin-bottom: 20px;
-            color: var(--text-dim);
+        /* Nav */
+        .nav-link {
+            display: inline-block; color: var(--text-dim); font-size: 0.72rem;
+            letter-spacing: 2px; text-decoration: none; margin-top: 12px;
+            transition: 0.2s; border-bottom: 1px solid transparent;
         }
+        .nav-link:hover { color: var(--cyan); border-color: var(--cyan); }
 
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 6px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .history-item:hover {
-            border-color: var(--cyan-dim);
-        }
-
-        .history-url {
-            font-size: 0.8rem;
-            color: var(--text);
-        }
-
-        .history-score {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 700;
-        }
-
-        /* Error */
-        .error-box {
-            display: none;
-            background: rgba(255,51,85,0.08);
-            border: 1px solid rgba(255,51,85,0.3);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            color: var(--red);
-            margin-bottom: 20px;
-        }
-
-        .error-box.active { display: block; }
-
-        /* Footer */
         .footer {
-            text-align: center;
-            margin-top: 60px;
-            padding: 20px;
-            color: var(--text-dim);
-            font-size: 0.7rem;
-            letter-spacing: 2px;
+            text-align: center; margin-top: 60px; padding: 20px;
+            color: var(--text-dim); font-size: 0.6rem; letter-spacing: 3px;
         }
 
         /* Mobile */
-        @media (max-width: 600px) {
-            .logo { font-size: 2rem; letter-spacing: 6px; }
-            .input-group { flex-direction: column; }
+        @media (max-width: 640px) {
+            .logo { font-size: 2.4rem; letter-spacing: 8px; }
+            .input-row { flex-direction: column; }
             .scan-btn { width: 100%; }
-            .check-item { grid-template-columns: 32px 1fr; }
-            .check-value { display: none; }
+            .score-row { flex-direction: column; text-align: center; gap: 20px; }
+            .score-stats { justify-content: center; }
+            .check-row { grid-template-columns: 28px 1fr; }
+            .chk-val { display: none; }
+            .ports-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
 
-<!-- Particles -->
-<div class="particles">
-    <div class="particle" style="left:10%; animation-delay:0s; animation-duration:7s"></div>
-    <div class="particle" style="left:20%; animation-delay:1s; animation-duration:9s"></div>
-    <div class="particle" style="left:35%; animation-delay:2s; animation-duration:6s"></div>
-    <div class="particle" style="left:50%; animation-delay:0.5s; animation-duration:8s"></div>
-    <div class="particle" style="left:65%; animation-delay:3s; animation-duration:7s"></div>
-    <div class="particle" style="left:80%; animation-delay:1.5s; animation-duration:10s"></div>
-    <div class="particle" style="left:90%; animation-delay:2.5s; animation-duration:6s"></div>
-</div>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
 
 <div class="container">
-    <!-- Header -->
     <div class="header">
-        <div class="logo">SHIELD</div>
+        <div class="logo-wrapper">
+            <div class="logo-glow"></div>
+            <div class="logo">SHIELD</div>
+        </div>
+        <div class="version">v2.0</div>
         <div class="subtitle">Security Header Inspector & Endpoint Detector</div>
     </div>
 
-    <!-- Scanner -->
     <div class="scanner-box">
-        <div class="input-group">
-            <input type="text" class="url-input" id="urlInput" placeholder="Введите URL для сканирования..." autocomplete="off">
+        <div class="input-row">
+            <input type="text" class="url-input" id="urlInput" placeholder="example.com" autocomplete="off" spellcheck="false">
             <button class="scan-btn" id="scanBtn" onclick="startScan()">SCAN</button>
         </div>
+        <div class="quick-links">
+            <div class="quick-link" onclick="quickScan('google.com')">google.com</div>
+            <div class="quick-link" onclick="quickScan('github.com')">github.com</div>
+            <div class="quick-link" onclick="quickScan('vk.com')">vk.com</div>
+            <div class="quick-link" onclick="quickScan('habr.com')">habr.com</div>
+        </div>
     </div>
 
-    <!-- Error -->
     <div class="error-box" id="errorBox"></div>
 
-    <!-- Loading -->
     <div class="loading" id="loading">
-        <div class="loading-ring"></div>
+        <div class="radar">
+            <div class="radar-dot" style="top:25%;left:60%"></div>
+            <div class="radar-dot" style="top:65%;left:30%;animation-delay:0.8s"></div>
+            <div class="radar-dot" style="top:40%;left:75%;animation-delay:1.5s"></div>
+        </div>
         <div class="loading-text">СКАНИРОВАНИЕ...</div>
+        <div class="loading-sub" id="loadingSub">Проверка заголовков безопасности</div>
     </div>
 
-    <!-- Results -->
     <div class="results" id="results">
-        <div class="score-section">
+        <div class="meta-bar" id="metaBar"></div>
+
+        <div class="score-row" id="scoreRow">
             <div class="score-circle">
-                <svg viewBox="0 0 170 170">
-                    <circle class="score-bg" cx="85" cy="85" r="80"></circle>
-                    <circle class="score-fill" id="scoreFill" cx="85" cy="85" r="80"></circle>
+                <svg viewBox="0 0 150 150">
+                    <circle class="score-bg" cx="75" cy="75" r="70"></circle>
+                    <circle class="score-fill" id="scoreFill" cx="75" cy="75" r="70"></circle>
                 </svg>
-                <div class="score-value">
-                    <div class="score-number" id="scoreNumber">0</div>
-                    <div class="score-label">SCORE</div>
+                <div class="score-inner">
+                    <div class="score-num" id="scoreNum">0</div>
+                    <div class="score-lbl">SCORE</div>
                 </div>
             </div>
-            <div class="grade-badge" id="gradeBadge"></div>
+            <div class="score-details">
+                <div class="grade-big" id="gradeBig"></div>
+                <div class="risk-level" id="riskLevel"></div>
+                <div class="score-stats">
+                    <div class="stat">
+                        <div class="stat-val" id="passedStat">0</div>
+                        <div class="stat-lbl">PASSED</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-val" id="failedStat" style="color:var(--red)">0</div>
+                        <div class="stat-lbl">FAILED</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-val" id="vulnsStat" style="color:var(--orange)">0</div>
+                        <div class="stat-lbl">VULNS</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="checks-grid" id="checksGrid"></div>
+        <div id="vulnsSection"></div>
+        <div id="checksSection"></div>
+        <div id="techSection"></div>
+        <div id="portsSection"></div>
     </div>
 
-    <!-- History -->
     {% if recent_scans %}
     <div class="history-section">
-        <div class="section-title">ПОСЛЕДНИЕ СКАНИРОВАНИЯ</div>
-        {% for scan in recent_scans %}
-        <div class="history-item" onclick="document.getElementById('urlInput').value='{{ scan.url }}'; startScan();">
-            <span class="history-url">{{ scan.url }}</span>
-            <span class="history-score" style="color: {{ scan.grade_color }}">{{ scan.score }}/100</span>
+        <div class="section-hdr">НЕДАВНИЕ <span class="section-count">{{ recent_scans|length }}</span></div>
+        {% for s in recent_scans %}
+        <div class="hist-row" onclick="quickScan('{{ s.url }}')">
+            <span class="hist-url">{{ s.url }}</span>
+            <span class="hist-score" style="color:{{ s.grade_color }}">{{ s.grade }} {{ s.score }}%</span>
         </div>
         {% endfor %}
+        <a href="/history/" class="nav-link">Вся история →</a>
     </div>
     {% endif %}
 
-    <div class="footer">
-        SHIELD SCANNER v1.0 — Инструмент аудита безопасности
-    </div>
+    <div class="footer">SHIELD SCANNER v2.0 — Инструмент аудита безопасности веб-приложений</div>
 </div>
 
 <script>
-const urlInput = document.getElementById('urlInput');
-const scanBtn = document.getElementById('scanBtn');
-const loading = document.getElementById('loading');
-const results = document.getElementById('results');
-const errorBox = document.getElementById('errorBox');
+const $ = id => document.getElementById(id);
+const urlInput = $('urlInput');
+const scanBtn = $('scanBtn');
 
-urlInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') startScan();
-});
+urlInput.addEventListener('keypress', e => { if(e.key==='Enter') startScan(); });
+function quickScan(u) { urlInput.value = u; startScan(); }
+
+const loadingMsgs = [
+    'Проверка заголовков безопасности',
+    'Анализ SSL-сертификата',
+    'Сканирование портов',
+    'Определение технологий',
+    'Поиск уязвимостей',
+    'Формирование отчёта',
+];
 
 function startScan() {
     const url = urlInput.value.trim();
     if (!url) return;
 
-    loading.classList.add('active');
-    results.classList.remove('active');
-    errorBox.classList.remove('active');
+    $('loading').classList.add('active');
+    $('results').classList.remove('active');
+    $('errorBox').classList.remove('active');
     scanBtn.disabled = true;
+
+    let msgIdx = 0;
+    const msgTimer = setInterval(() => {
+        msgIdx = (msgIdx + 1) % loadingMsgs.length;
+        $('loadingSub').textContent = loadingMsgs[msgIdx];
+    }, 1500);
 
     fetch('/api/scan/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url })
+        body: JSON.stringify({ url })
     })
-    .then(res => res.json())
+    .then(r => r.json())
     .then(data => {
-        loading.classList.remove('active');
+        clearInterval(msgTimer);
+        $('loading').classList.remove('active');
         scanBtn.disabled = false;
-
         if (data.error) {
-            errorBox.textContent = data.error;
-            errorBox.classList.add('active');
+            $('errorBox').textContent = data.error;
+            $('errorBox').classList.add('active');
             return;
         }
-
-        showResults(data);
+        renderResults(data);
     })
-    .catch(err => {
-        loading.classList.remove('active');
+    .catch(() => {
+        clearInterval(msgTimer);
+        $('loading').classList.remove('active');
         scanBtn.disabled = false;
-        errorBox.textContent = 'Ошибка соединения с сервером';
-        errorBox.classList.add('active');
+        $('errorBox').textContent = 'Ошибка соединения';
+        $('errorBox').classList.add('active');
     });
 }
 
-function showResults(data) {
-    results.classList.add('active');
+function getGrade(s) {
+    if(s>=90) return 'A+'; if(s>=80) return 'A'; if(s>=70) return 'B';
+    if(s>=55) return 'C'; if(s>=40) return 'D'; return 'F';
+}
+function getColor(s) {
+    if(s>=80) return '#00ff88'; if(s>=70) return '#88ff00';
+    if(s>=55) return '#ffcc00'; if(s>=40) return '#ff8800'; return '#ff2d55';
+}
+function getRisk(s) {
+    if(s>=80) return ['Низкий','var(--green)']; if(s>=55) return ['Средний','var(--yellow)'];
+    if(s>=30) return ['Высокий','var(--orange)']; return ['Критический','var(--red)'];
+}
 
-    // Score animation
-    const score = data.score;
-    const scoreNumber = document.getElementById('scoreNumber');
-    const scoreFill = document.getElementById('scoreFill');
-    const gradeBadge = document.getElementById('gradeBadge');
+function renderResults(d) {
+    $('results').classList.add('active');
 
-    // Color based on score
-    let color, grade;
-    if (score >= 90) { color = '#00ff88'; grade = 'A'; }
-    else if (score >= 75) { color = '#88ff00'; grade = 'B'; }
-    else if (score >= 60) { color = '#ffcc00'; grade = 'C'; }
-    else if (score >= 40) { color = '#ff8800'; grade = 'D'; }
-    else { color = '#ff3355'; grade = 'F'; }
+    // Meta
+    const metas = [`<span>IP:</span> ${d.ip_address||'N/A'}`, `<span>Время:</span> ${d.scan_time}с`,
+                    `<span>Проверок:</span> ${d.total_checks}`, `<span>Уязвимостей:</span> ${d.vulnerabilities?.length||0}`];
+    $('metaBar').innerHTML = metas.map(m=>`<div class="meta-item">${m}</div>`).join('');
 
-    // Animate score circle
-    const circumference = 2 * Math.PI * 80;
-    const offset = circumference - (score / 100) * circumference;
-    scoreFill.style.stroke = color;
-    scoreFill.style.strokeDasharray = circumference;
+    // Score
+    const score = d.score, color = getColor(score), grade = getGrade(score);
+    const circ = 2 * Math.PI * 70;
+    const fill = $('scoreFill');
+    fill.style.stroke = color;
+    fill.style.strokeDasharray = circ;
+    setTimeout(() => { fill.style.strokeDashoffset = circ - (score/100)*circ; }, 50);
 
-    setTimeout(() => {
-        scoreFill.style.strokeDashoffset = offset;
-    }, 100);
-
-    // Animate number
-    let current = 0;
-    const step = Math.ceil(score / 40);
+    let cur = 0; const step = Math.max(1, Math.ceil(score/50));
     const counter = setInterval(() => {
-        current += step;
-        if (current >= score) {
-            current = score;
-            clearInterval(counter);
-        }
-        scoreNumber.textContent = current;
-        scoreNumber.style.color = color;
-    }, 30);
+        cur = Math.min(cur + step, score);
+        $('scoreNum').textContent = cur;
+        $('scoreNum').style.color = color;
+        if(cur >= score) clearInterval(counter);
+    }, 25);
 
-    // Grade badge
-    gradeBadge.textContent = `GRADE: ${grade}`;
-    gradeBadge.style.background = color + '18';
-    gradeBadge.style.color = color;
-    gradeBadge.style.border = `1px solid ${color}40`;
+    $('gradeBig').textContent = `GRADE: ${grade}`;
+    $('gradeBig').style.color = color;
+    const [riskText, riskColor] = getRisk(score);
+    $('riskLevel').innerHTML = `Уровень риска: <span style="color:${riskColor};font-weight:600">${riskText}</span>`;
+    $('passedStat').textContent = d.passed_checks;
+    $('passedStat').style.color = 'var(--green)';
+    $('failedStat').textContent = d.total_checks - d.passed_checks;
+    $('vulnsStat').textContent = d.vulnerabilities?.length || 0;
+
+    // Vulnerabilities
+    const vulns = d.vulnerabilities || [];
+    let vulnHTML = '';
+    if (vulns.length) {
+        vulnHTML = `<div class="section-hdr">УЯЗВИМОСТИ <span class="section-count">${vulns.length}</span></div><div class="vuln-list">`;
+        vulns.forEach((v, i) => {
+            vulnHTML += `
+            <div class="vuln-card" style="transition-delay:${i*60}ms">
+                <div class="vuln-header" onclick="toggleVuln(this)">
+                    <span class="vuln-sev sev-${v.severity}">${v.severity}</span>
+                    <span class="vuln-title">${v.name}</span>
+                    <span class="vuln-cvss" style="color:${getColor(100-v.cvss*10)}">${v.cvss}</span>
+                    <span class="vuln-toggle">▼</span>
+                </div>
+                <div class="vuln-body">
+                    <div class="vuln-field">
+                        <div class="vuln-field-label">ID / Категория</div>
+                        <div class="vuln-field-text">${v.id} — ${v.category}</div>
+                    </div>
+                    <div class="vuln-field">
+                        <div class="vuln-field-label">Описание</div>
+                        <div class="vuln-field-text">${v.description}</div>
+                    </div>
+                    <div class="vuln-field">
+                        <div class="vuln-field-label">Воздействие</div>
+                        <div class="vuln-field-text">${v.impact}</div>
+                    </div>
+                    <div class="vuln-field">
+                        <div class="vuln-field-label">Рекомендация</div>
+                        <div class="vuln-fix">${v.fix}</div>
+                    </div>
+                    ${v.references ? `<div class="vuln-field"><div class="vuln-ref">${v.references.join(', ')}</div></div>` : ''}
+                </div>
+            </div>`;
+        });
+        vulnHTML += '</div>';
+    }
+    $('vulnsSection').innerHTML = vulnHTML;
+
+    // Animate vuln cards
+    setTimeout(() => {
+        document.querySelectorAll('.vuln-card').forEach((c,i) => {
+            setTimeout(() => c.classList.add('visible'), i * 60);
+        });
+    }, 200);
 
     // Checks
-    const checksGrid = document.getElementById('checksGrid');
-    checksGrid.innerHTML = '';
-
-    data.checks.forEach((check, i) => {
-        const item = document.createElement('div');
-        item.className = 'check-item';
-        item.innerHTML = `
-            <div class="check-icon ${check.passed ? 'pass' : 'fail'}">
-                ${check.passed ? '✓' : '✗'}
-            </div>
-            <div class="check-info">
-                <h3>${check.name}
-                    <span class="severity-badge severity-${check.severity}">${check.severity}</span>
-                </h3>
-                <p>${check.description}</p>
-            </div>
-            <div class="check-value">${check.value}</div>
-        `;
-
-        checksGrid.appendChild(item);
-
-        setTimeout(() => {
-            item.classList.add('visible');
-        }, 100 + i * 80);
+    const checks = d.checks || [];
+    let chkHTML = `<div class="section-hdr">ПРОВЕРКИ <span class="section-count">${checks.length}</span></div><div class="checks-list">`;
+    checks.forEach((c, i) => {
+        chkHTML += `
+        <div class="check-row" style="transition:opacity 0.3s ${i*50}ms, transform 0.3s ${i*50}ms">
+            <div class="chk-icon ${c.passed?'pass':'fail'}">${c.passed?'✓':'✗'}</div>
+            <div><div class="chk-name">${c.name}</div><div class="chk-desc">${c.description}</div></div>
+            <div class="chk-val">${c.value}</div>
+        </div>`;
     });
+    chkHTML += '</div>';
+    $('checksSection').innerHTML = chkHTML;
+
+    setTimeout(() => {
+        document.querySelectorAll('.check-row').forEach((r,i) => {
+            setTimeout(() => r.classList.add('visible'), i * 50);
+        });
+    }, 400);
+
+    // Technologies
+    const techs = d.technologies || [];
+    if (techs.length) {
+        $('techSection').innerHTML = `
+            <div class="section-hdr">ТЕХНОЛОГИИ <span class="section-count">${techs.length}</span></div>
+            <div class="tech-grid">${techs.map(t=>`<div class="tech-tag">${t}</div>`).join('')}</div>`;
+    } else {
+        $('techSection').innerHTML = '';
+    }
+
+    // Ports
+    const ports = d.open_ports || [];
+    if (ports.length) {
+        let pHTML = `<div class="section-hdr">ОТКРЫТЫЕ ПОРТЫ <span class="section-count">${ports.length}</span></div><div class="ports-grid">`;
+        ports.forEach(p => {
+            pHTML += `
+            <div class="port-card">
+                <div class="port-num" style="color:${p.risk==='danger'?'var(--red)':p.risk==='warning'?'var(--orange)':'var(--green)'}">:${p.port}</div>
+                <div class="port-service">${p.service} — ${p.description}</div>
+                <span class="port-risk risk-${p.risk}">${p.risk==='danger'?'опасно':p.risk==='warning'?'внимание':'ок'}</span>
+            </div>`;
+        });
+        pHTML += '</div>';
+        $('portsSection').innerHTML = pHTML;
+    } else {
+        $('portsSection').innerHTML = '';
+    }
+}
+
+function toggleVuln(el) {
+    const body = el.nextElementSibling;
+    const toggle = el.querySelector('.vuln-toggle');
+    body.classList.toggle('open');
+    toggle.classList.toggle('open');
 }
 </script>
 

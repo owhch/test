@@ -4,45 +4,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHIELD — История сканирований</title>
+    <title>SHIELD — История</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0a0a0f; --card: #16161f; --cyan: #00ffd5;
-            --green: #00ff88; --red: #ff3355; --text: #e0e0e8;
-            --dim: #6a6a7a; --border: #2a2a3a;
-        }
+        :root { --bg:#06060b; --bg2:#13131e; --cyan:#00ffd5; --green:#00ff88; --red:#ff2d55; --text:#e4e4ec; --dim:#5e5e72; --border:#222235; }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; padding:40px 20px; }
         .container { max-width:800px; margin:0 auto; }
-        h1 { font-family:'Orbitron',sans-serif; font-size:1.5rem; letter-spacing:6px; text-align:center; margin-bottom:8px;
+        h1 { font-family:'Orbitron'; font-size:1.5rem; letter-spacing:6px; text-align:center; margin-bottom:6px;
              background:linear-gradient(135deg,var(--cyan),var(--green)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .back { display:block; text-align:center; color:var(--dim); margin-bottom:30px; text-decoration:none; font-size:0.8rem; letter-spacing:2px; }
+        .back { display:block; text-align:center; color:var(--dim); margin-bottom:24px; text-decoration:none; font-size:0.75rem; letter-spacing:2px; }
         .back:hover { color:var(--cyan); }
-        .scan-row { display:flex; justify-content:space-between; align-items:center; padding:16px 20px;
-                    background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:6px; }
-        .scan-url { font-size:0.8rem; }
-        .scan-score { font-family:'Orbitron',sans-serif; font-weight:700; }
-        .scan-date { font-size:0.7rem; color:var(--dim); }
-        .empty { text-align:center; color:var(--dim); padding:60px; font-size:0.85rem; }
+        .row { display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:center;
+               padding:14px 18px; background:var(--bg2); border:1px solid var(--border); border-radius:9px; margin-bottom:5px; }
+        .row:hover { border-color:#2d2d44; }
+        .url { font-size:0.78rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .score { font-family:'Orbitron'; font-size:0.82rem; font-weight:700; }
+        .date { font-size:0.65rem; color:var(--dim); white-space:nowrap; }
+        .empty { text-align:center; color:var(--dim); padding:60px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>ИСТОРИЯ</h1>
-    <a href="/" class="back">← НАЗАД К СКАНЕРУ</a>
+    <a href="/" class="back">← СКАНЕР</a>
     {% if scans %}
-        {% for scan in scans %}
-        <div class="scan-row">
-            <div>
-                <div class="scan-url">{{ scan.url }}</div>
-                <div class="scan-date">{{ scan.scanned_at|date:"d.m.Y H:i" }}</div>
-            </div>
-            <div class="scan-score" style="color:{{ scan.grade_color }}">{{ scan.grade }} — {{ scan.score }}/100</div>
+        {% for s in scans %}
+        <div class="row">
+            <div class="url">{{ s.url }}</div>
+            <div class="date">{{ s.scanned_at|date:"d.m.Y H:i" }}</div>
+            <div class="score" style="color:{{ s.grade_color }}">{{ s.grade }} {{ s.score }}%</div>
         </div>
         {% endfor %}
     {% else %}
-        <div class="empty">Сканирований пока нет</div>
+        <div class="empty">Пока ничего не сканировали</div>
     {% endif %}
 </div>
 </body>

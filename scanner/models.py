@@ -1,12 +1,16 @@
 from django.db import models
+import json
 
 
 class ScanResult(models.Model):
     url = models.URLField(max_length=500)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     score = models.IntegerField(default=0)
     total_checks = models.IntegerField(default=0)
     passed_checks = models.IntegerField(default=0)
     results_json = models.JSONField(default=dict)
+    technologies = models.JSONField(default=list)
+    open_ports = models.JSONField(default=list)
     scanned_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -17,17 +21,25 @@ class ScanResult(models.Model):
 
     @property
     def grade(self):
-        if self.score >= 90:
-            return 'A'
-        elif self.score >= 75:
-            return 'B'
-        elif self.score >= 60:
-            return 'C'
-        elif self.score >= 40:
-            return 'D'
+        if self.score >= 90: return 'A+'
+        if self.score >= 80: return 'A'
+        if self.score >= 70: return 'B'
+        if self.score >= 55: return 'C'
+        if self.score >= 40: return 'D'
         return 'F'
 
     @property
     def grade_color(self):
-        colors = {'A': '#00ff88', 'B': '#88ff00', 'C': '#ffcc00', 'D': '#ff8800', 'F': '#ff3355'}
-        return colors.get(self.grade, '#ff3355')
+        g = self.grade
+        if g in ('A+', 'A'): return '#00ff88'
+        if g == 'B': return '#88ff00'
+        if g == 'C': return '#ffcc00'
+        if g == 'D': return '#ff8800'
+        return '#ff3355'
+
+    @property
+    def risk_level(self):
+        if self.score >= 80: return 'Низкий'
+        if self.score >= 55: return 'Средний'
+        if self.score >= 30: return 'Высокий'
+        return 'Критический'
